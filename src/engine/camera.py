@@ -1,5 +1,4 @@
 import glm
-import pygame as pg
 
 class Camera:
     def __init__(self, position=(0, 0, 0), yaw=-90, pitch=0):
