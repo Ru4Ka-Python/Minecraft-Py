@@ -2,6 +2,7 @@ import glm
 import numpy as np
 import moderngl as mgl
 import pygame as pg
+import os
 
 class Panorama:
     def __init__(self, renderer):
@@ -35,18 +36,20 @@ class Panorama:
         self.create_cube()
 
     def load_cube_map(self):
+        base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         faces = []
         for i in range(6):
             # The order in Minecraft is usually: 0:front, 1:right, 2:back, 3:left, 4:up, 5:down
             # ModernGL expects: pos_x, neg_x, pos_y, neg_y, pos_z, neg_z
             # Mapping might need adjustment
-            img = pg.image.load(f'/home/engine/project/assets/title/bg/panorama{i}.png').convert()
+            path = os.path.join(base_path, 'assets', 'title', 'bg', f'panorama{i}.png')
+            img = pg.image.load(path).convert()
             faces.append(pg.image.tostring(img, 'RGB'))
         
-        self.texture_cube = self.ctx.texture_cube((256, 256), 3, None)
         # Assuming size 256x256 for panorama images. Let's check.
         # Actually I should get size from image.
-        size = pg.image.load('/home/engine/project/assets/title/bg/panorama0.png').get_size()
+        size_path = os.path.join(base_path, 'assets', 'title', 'bg', 'panorama0.png')
+        size = pg.image.load(size_path).get_size()
         self.texture_cube = self.ctx.texture_cube(size, 3, None)
         
         # Order for Cubemap: pos_x, neg_x, pos_y, neg_y, pos_z, neg_z

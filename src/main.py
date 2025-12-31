@@ -1,7 +1,9 @@
 import pygame as pg
 import moderngl as mgl
 import sys
+import os
 import time
+import numpy as np
 from engine.renderer import Renderer
 from ui.panorama import Panorama
 from ui.splash import SplashText
@@ -24,9 +26,13 @@ class MinecraftClone:
         self.ctx.enable(mgl.DEPTH_TEST | mgl.CULL_FACE | mgl.BLEND)
         
         self.clock = pg.time.Clock()
+        
+        # Get root directory
+        self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
         self.renderer = Renderer(self)
         self.panorama = Panorama(self.renderer)
-        self.splash = SplashText('/home/engine/project/assets/title/splashes.txt')
+        self.splash = SplashText(os.path.join(self.root_dir, 'assets', 'title', 'splashes.txt'))
         
         self.gui_surface = pg.Surface(self.screen_size, pg.SRCALPHA)
         self.gui_tex = self.ctx.texture(self.screen_size, 4)
@@ -42,9 +48,9 @@ class MinecraftClone:
         self.command_handler = CommandHandler(self)
 
     def load_assets(self):
-        self.gui_img = pg.image.load('/home/engine/project/assets/gui/gui.png').convert_alpha()
-        self.icons_img = pg.image.load('/home/engine/project/assets/gui/icons.png').convert_alpha()
-        self.logo_img = pg.image.load('/home/engine/project/assets/title/mclogo.png').convert_alpha()
+        self.gui_img = pg.image.load(os.path.join(self.root_dir, 'assets', 'gui', 'gui.png')).convert_alpha()
+        self.icons_img = pg.image.load(os.path.join(self.root_dir, 'assets', 'gui', 'icons.png')).convert_alpha()
+        self.logo_img = pg.image.load(os.path.join(self.root_dir, 'assets', 'title', 'mclogo.png')).convert_alpha()
 
     def init_ui(self):
         hw, hh = self.screen_size[0] // 2, self.screen_size[1] // 2

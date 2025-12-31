@@ -24,10 +24,11 @@ class Renderer:
     def load_textures(self):
         # Try to load terrain.png, fallback to something else if missing
         import os
-        terrain_path = '/home/engine/project/assets/terrain.png'
+        base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        terrain_path = os.path.join(base_path, 'assets', 'terrain.png')
         if not os.path.exists(terrain_path):
             # Fallback to items.png or something just to have a texture
-            terrain_path = '/home/engine/project/assets/gui/items.png'
+            terrain_path = os.path.join(base_path, 'assets', 'gui', 'items.png')
             
         self.textures['terrain'] = self.load_texture(terrain_path)
         self.textures['terrain'].use(location=0)
