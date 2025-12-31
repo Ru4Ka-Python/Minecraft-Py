@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Binary files - do not perform line ending conversion
+*.png binary
+*.dat binary
