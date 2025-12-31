@@ -1,7 +1,7 @@
 import glm
 import numpy as np
 import moderngl as mgl
-import pygame as pg
+from PIL import Image
 import os
 
 class Panorama:
@@ -43,13 +43,14 @@ class Panorama:
             # ModernGL expects: pos_x, neg_x, pos_y, neg_y, pos_z, neg_z
             # Mapping might need adjustment
             path = os.path.join(base_path, 'assets', 'title', 'bg', f'panorama{i}.png')
-            img = pg.image.load(path).convert()
-            faces.append(pg.image.tostring(img, 'RGB'))
+            img = Image.open(path).convert('RGB')
+            faces.append(img.tobytes())
         
         # Assuming size 256x256 for panorama images. Let's check.
         # Actually I should get size from image.
         size_path = os.path.join(base_path, 'assets', 'title', 'bg', 'panorama0.png')
-        size = pg.image.load(size_path).get_size()
+        size_img = Image.open(size_path)
+        size = size_img.size
         self.texture_cube = self.ctx.texture_cube(size, 3, None)
         
         # Order for Cubemap: pos_x, neg_x, pos_y, neg_y, pos_z, neg_z

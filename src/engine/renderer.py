@@ -1,4 +1,4 @@
-import pygame as pg
+from PIL import Image
 import moderngl as mgl
 from engine.shaders import get_shader_program
 from engine.camera import Camera
@@ -41,10 +41,10 @@ class Renderer:
         self.chunk_mesh = ChunkMesh(self.ctx, self.program, voxels)
 
     def load_texture(self, path):
-        texture_surface = pg.image.load(path).convert_alpha()
-        texture_surface = pg.transform.flip(texture_surface, False, True)
-        texture_data = pg.image.tostring(texture_surface, 'RGBA')
-        texture = self.ctx.texture(texture_surface.get_size(), 4, texture_data)
+        texture_img = Image.open(path).convert('RGBA')
+        texture_img = texture_img.transpose(Image.FLIP_TOP_BOTTOM)
+        texture_data = texture_img.tobytes()
+        texture = self.ctx.texture(texture_img.size, 4, texture_data)
         texture.filter = (mgl.NEAREST, mgl.NEAREST)
         texture.build_mipmaps()
         return texture

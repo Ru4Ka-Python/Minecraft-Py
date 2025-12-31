@@ -1,9 +1,10 @@
-import pygame as pg
+import glfw
 import moderngl as mgl
 import sys
 import os
 import time
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 from engine.renderer import Renderer
 from ui.panorama import Panorama
 from ui.splash import SplashText
@@ -14,18 +15,24 @@ from game.commands import CommandHandler
 
 class MinecraftClone:
     def __init__(self):
-        pg.init()
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
+        glfw.init()
+        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
         
         self.screen_size = (1280, 720)
-        self.screen = pg.display.set_mode(self.screen_size, pg.OPENGL | pg.DOUBLEBUF)
+        self.window = glfw.create_window(self.screen_size[0], self.screen_size[1], "Minecraft Clone", None, None)
+        glfw.make_context_current(self.window)
+        glfw.set_window_user_pointer(self.window, self)
+        glfw.set_key_callback(self.window, self.key_callback)
+        glfw.set_mouse_button_callback(self.window, self.mouse_button_callback)
+        glfw.set_cursor_pos_callback(self.window, self.cursor_position_callback)
+        
         self.ctx = mgl.create_context()
         
         self.ctx.enable(mgl.DEPTH_TEST | mgl.CULL_FACE | mgl.BLEND)
         
-        self.clock = pg.time.Clock()
+        self.last_time = time.time()
         
         # Get root directory
         self.root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,11 +41,13 @@ class MinecraftClone:
         self.panorama = Panorama(self.renderer)
         self.splash = SplashText(os.path.join(self.root_dir, 'assets', 'title', 'splashes.txt'))
         
-        self.gui_surface = pg.Surface(self.screen_size, pg.SRCALPHA)
+        self.gui_surface = Image.new('RGBA', self.screen_size, (0, 0, 0, 0))
         self.gui_tex = self.ctx.texture(self.screen_size, 4)
         
         self.state = 'MENU'
         self.is_running = True
+        self.mouse_pos = (0, 0)
+        self.keys_pressed = set()
         
         self.load_assets()
         self.init_ui()
@@ -48,9 +57,11 @@ class MinecraftClone:
         self.command_handler = CommandHandler(self)
 
     def load_assets(self):
-        self.gui_img = pg.image.load(os.path.join(self.root_dir, 'assets', 'gui', 'gui.png')).convert_alpha()
-        self.icons_img = pg.image.load(os.path.join(self.root_dir, 'assets', 'gui', 'icons.png')).convert_alpha()
-        self.logo_img = pg.image.load(os.path.join(self.root_dir, 'assets', 'title', 'mclogo.png')).convert_alpha()
+        self.gui_img = Image.open(os.path.join(self.root_dir, 'assets', 'gui', 'gui.png')).convert('RGBA')
+        self.icons_img = Image.open(os.path.join(self.root_dir, 'assets', 'gui', 'icons.png')).convert('RGBA')
+        self.logo_img = Image.open(os.path.join(self.root_dir, 'assets', 'title', 'mclogo.png')).convert('RGBA')
+        self.font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 24)
+        self.font_small = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 18)
 
     def init_ui(self):
         hw, hh = self.screen_size[0] // 2, self.screen_size[1] // 2
@@ -60,40 +71,46 @@ class MinecraftClone:
             'quit': Button((hw - 200, hh + 72, 400, 40), "Quit Game", self.gui_img),
         }
 
-    def handle_events(self):
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
+    def key_callback(self, window, key, scancode, action, mods):
+        if key == glfw.KEY_ESCAPE and action == glfw.PRESS:
+            if self.state == 'GAME':
+                self.state = 'MENU'
+                glfw.set_input_mode(window, glfw.CURSOR, glfw.CURSOR_NORMAL)
+            else:
                 self.is_running = False
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if self.state == 'MENU':
-                    if self.buttons['singleplayer'].is_hovered:
-                        self.state = 'GAME'
-                        pg.mouse.set_visible(False)
-                        pg.event.set_grab(True)
-                    elif self.buttons['quit'].is_hovered:
-                        self.is_running = False
-            if event.type == pg.KEYDOWN:
-                if event.key == pg.K_ESCAPE:
-                    if self.state == 'GAME':
-                        self.state = 'MENU'
-                        pg.mouse.set_visible(True)
-                        pg.event.set_grab(False)
-                    else:
-                        self.is_running = False
+    
+    def mouse_button_callback(self, window, button, action, mods):
+        if action == glfw.PRESS and button == glfw.MOUSE_BUTTON_LEFT:
+            if self.state == 'MENU':
+                if self.buttons['singleplayer'].is_hovered:
+                    self.state = 'GAME'
+                    glfw.set_input_mode(window, glfw.CURSOR, glfw.CURSOR_DISABLED)
+                elif self.buttons['quit'].is_hovered:
+                    self.is_running = False
+    
+    def cursor_position_callback(self, window, xpos, ypos):
+        self.mouse_pos = (int(xpos), int(ypos))
+
+    def handle_events(self):
+        if glfw.window_should_close(self.window):
+            self.is_running = False
+        glfw.poll_events()
 
     def update(self):
-        dt = self.clock.get_time() / 1000.0
+        current_time = time.time()
+        dt = current_time - self.last_time
+        self.last_time = current_time
         now = time.time()
         
         if self.state == 'MENU':
-            mouse_pos = pg.mouse.get_pos()
             for btn in self.buttons.values():
-                btn.update(mouse_pos)
+                btn.update(self.mouse_pos)
         else:
-            self.player.update(dt, None, None) # Pass actual world and input
+            self.player.update(dt, None, None)
             self.renderer.update()
-
-        pg.display.set_caption(f"Minecraft 1.0 (Python Edition) - FPS: {self.clock.get_fps():.0f}")
+        
+        fps = 1.0 / dt if dt > 0 else 0
+        glfw.set_window_title(self.window, f"Minecraft 1.0 (Python Edition) - FPS: {fps:.0f}")
 
     def render(self):
         self.ctx.clear(color=(0.1, 0.1, 0.1))
@@ -105,46 +122,48 @@ class MinecraftClone:
             self.renderer.render()
             self.render_game_overlay()
             
-        pg.display.flip()
+        glfw.swap_buffers(self.window)
 
     def render_menu_overlay(self):
-        self.gui_surface.fill((0, 0, 0, 0))
+        self.gui_surface = Image.new('RGBA', self.screen_size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(self.gui_surface)
         
         # Logo
-        logo_rect = self.logo_img.get_rect(center=(self.screen_size[0]//2, 100))
-        self.gui_surface.blit(self.logo_img, logo_rect)
+        logo_size = self.logo_img.size
+        logo_pos = ((self.screen_size[0] - logo_size[0]) // 2, 100 - logo_size[1] // 2)
+        self.gui_surface.paste(self.logo_img, logo_pos, self.logo_img)
         
         # Splash Text
         scale = self.splash.get_scale(time.time())
-        font = pg.font.SysFont('Arial', int(24 * scale), bold=True)
-        splash_surf = font.render(self.splash.current_splash, True, (255, 255, 0))
-        splash_surf = pg.transform.rotate(splash_surf, self.splash.angle)
-        self.gui_surface.blit(splash_surf, (logo_rect.right - 50, logo_rect.bottom - 20))
+        scaled_size = int(24 * scale)
+        splash_font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', scaled_size)
+        
+        splash_surf = Image.new('RGBA', (400, 50), (0, 0, 0, 0))
+        splash_draw = ImageDraw.Draw(splash_surf)
+        splash_draw.text((200, 25), self.splash.current_splash, fill=(255, 255, 0, 255), font=splash_font, anchor='mm')
+        splash_surf = splash_surf.rotate(self.splash.angle, expand=True, fillcolor=(0, 0, 0, 0))
+        
+        splash_pos = (logo_pos[0] + logo_size[0] - 50, logo_pos[1] + logo_size[1] - 20)
+        self.gui_surface.paste(splash_surf, splash_pos, splash_surf)
         
         # Buttons
         for btn in self.buttons.values():
-            btn.draw(self.gui_surface)
+            btn.draw(self.gui_surface, draw, self.font)
             
         # Version Label
-        font_small = pg.font.SysFont('Arial', 18)
-        ver_surf = font_small.render("Minecraft 1.0 (Python Edition)", True, (255, 255, 255))
-        self.gui_surface.blit(ver_surf, (10, self.screen_size[1] - 30))
+        draw.text((10, self.screen_size[1] - 30), "Minecraft 1.0 (Python Edition)", fill=(255, 255, 255), font=self.font_small)
         
         self.draw_gui_surface()
 
     def render_game_overlay(self):
-        self.gui_surface.fill((0, 0, 0, 0))
+        self.gui_surface = Image.new('RGBA', self.screen_size, (0, 0, 0, 0))
         self.hud.draw(self.gui_surface, self.player)
         self.draw_gui_surface()
 
     def draw_gui_surface(self):
-        data = pg.image.tostring(self.gui_surface, 'RGBA')
+        data = self.gui_surface.tobytes()
         self.gui_tex.write(data)
         self.gui_tex.use(location=1)
-        # We need a simple quad to render this texture
-        # For simplicity, I'll just skip the complex shader-based UI for now
-        # and use a blit if possible, but ModernGL doesn't blit to screen directly easily
-        # I'll use a simple helper to render a full-screen quad
         self.render_quad(self.gui_tex)
 
     def render_quad(self, texture):
@@ -190,8 +209,7 @@ class MinecraftClone:
             self.handle_events()
             self.update()
             self.render()
-            self.clock.tick(60)
-        pg.quit()
+        glfw.terminate()
         sys.exit()
 
 if __name__ == "__main__":
