@@ -39,9 +39,9 @@ class Config:
             self.config_path = config_path
         
         self.config: Dict[str, Any] = self.DEFAULT_CONFIG.copy()
-        self._load()
+        self.load()
     
-    def _load(self) -> None:
+    def load(self) -> None:
         """Load configuration from file."""
         if os.path.exists(self.config_path):
             try:
