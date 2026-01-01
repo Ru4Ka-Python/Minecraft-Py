@@ -20,7 +20,6 @@ def main():
     """Main entry point for the Minecraft clone."""
     # Load configuration
     config = Config()
-    config.load()
     
     # Create window
     window = Window(
