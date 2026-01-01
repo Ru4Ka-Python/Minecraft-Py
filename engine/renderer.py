@@ -173,7 +173,7 @@ class TerrainRenderer:
                         tile = atlas_data[y*16:(y+1)*16, x*16:(x+1)*16]
                         self.texture_array.write(idx, tile.tobytes())
             
-            self.texture_array.filter = 'nearest'
+            self.texture_array.filter = (moderngl.NEAREST, moderngl.NEAREST)
             self.texture_array.use(0)
             
         except Exception as e:
@@ -199,7 +199,7 @@ class TerrainRenderer:
         
         self.texture_array = self.ctx.texture_array((num_textures, 16, 16), 4)
         self.texture_array.write(data.tobytes())
-        self.texture_array.filter = 'nearest'
+        self.texture_array.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.texture_array.use(0)
     
     def _update_projection(self) -> None:
