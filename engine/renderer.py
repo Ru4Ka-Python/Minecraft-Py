@@ -553,11 +553,11 @@ class EntityRenderer:
                 ''',
                 fragment_shader='''
                     #version 330
-                    uniform sampler2D texture;
+                    uniform sampler2D u_texture;
                     in vec2 v_texcoord;
                     out vec4 fragColor;
                     void main() {
-                        fragColor = texture(texture, v_texcoord);
+                        fragColor = texture(u_texture, v_texcoord);
                     }
                 '''
             ),
@@ -618,12 +618,12 @@ class ParticleRenderer:
                 ''',
                 fragment_shader='''
                     #version 330
-                    uniform sampler2D texture;
+                    uniform sampler2D u_texture;
                     uniform float alpha;
                     in vec2 v_texcoord;
                     out vec4 fragColor;
                     void main() {
-                        fragColor = texture(texture, v_texcoord);
+                        fragColor = texture(u_texture, v_texcoord);
                         fragColor.a *= alpha;
                     }
                 '''
@@ -688,11 +688,11 @@ class UIRenderer:
                 ''',
                 fragment_shader='''
                     #version 330
-                    uniform sampler2D texture;
+                    uniform sampler2D u_texture;
                     in vec2 v_texcoord;
                     out vec4 fragColor;
                     void main() {
-                        fragColor = texture(texture, v_texcoord);
+                        fragColor = texture(u_texture, v_texcoord);
                     }
                 '''
             ),
