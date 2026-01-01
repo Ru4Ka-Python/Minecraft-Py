@@ -1,0 +1,16 @@
+# Minecraft Clone Python Edition - Dependencies
+
+# Core rendering
+glfw>=2.6.0
+moderngl>=5.8.0
+PyOpenGL>=3.1.6
+
+# Image processing
+Pillow>=9.5.0
+
+# Math
+numpy>=1.24.0
+glm>=0.9.9
+
+# Optional: for additional features
+scipy>=1.10.0  # For advanced noise algorithms
